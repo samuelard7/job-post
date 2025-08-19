@@ -8,40 +8,83 @@ import JobPage, {jobLoader} from './pages/JobPage';
 import AddJobPage from './pages/AddJobPage';
 import EditJobPage from './pages/EditJobPage';
 
+import { Client } from '@neondatabase/serverless';
 
-//Add New Job
+const postgresqlUrl = "postgresql://neondb_owner:npg_ZArCK45fbUst@ep-round-cell-a15m0uka-pooler.ap-southeast-1.aws.neon.tech/job-post-db?sslmode=require&channel_binding=require";
+
 const App = () => {
+  // Add New Job
   const addJob = async (newJob) => {
-  newJob.createdAt = new Date().toLocaleTimeString();
-  const res = await fetch('/api/jobs', {
-    method:'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(newJob),
-  });
-  return;
-};
+    const neonClient = new Client({ connectionString: postgresqlUrl });
+    try {
+      await neonClient.connect();
+      await neonClient.query(
+        `INSERT INTO jobpostdb (title, type, location, description, salary, company_name, company_description, contact_email, contact_phone, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())`,
+        [
+          newJob.title,
+          newJob.type,
+          newJob.location,
+          newJob.description,
+          newJob.salary,
+          newJob.company_name,
+          newJob.company_description,
+          newJob.contact_email,
+          newJob.contact_phone
+        ]
+      );
+    } catch (error) {
+      console.error('Error adding job:', error);
+    } finally {
+      await neonClient.end();
+    }
+    return;
+  };
 
 // Delete Job
-const deleteJob = async (id) => {
-  const res = await fetch(`/api/jobs/${id}`, {
-    method:'DELETE',
-  });
-  return;
-};
+  const deleteJob = async (id) => {
+    const neonClient = new Client({ connectionString: postgresqlUrl });
+    try {
+      await neonClient.connect();
+      await neonClient.query(
+        `DELETE FROM jobpostdb WHERE id = $1`,
+        [id]
+      );
+    } catch (error) {
+      console.error('Error deleting job:', error);
+    } finally {
+      await neonClient.end();
+    }
+    return;
+  };
 
-//Update Job
-const updateJob = async (job) => {
-  const res = await fetch(`/api/jobs/${job.id}`, {
-    method:'PUT',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(job),
-  });
-  return;
-};
+  // Update Job
+  const updateJob = async (job) => {
+    const neonClient = new Client({ connectionString: postgresqlUrl });
+    try {
+      await neonClient.connect();
+      await neonClient.query(
+        `UPDATE jobpostdb SET title = $1, type = $2, location = $3, description = $4, salary = $5, company_name = $6, company_description = $7, contact_email = $8, contact_phone = $9 WHERE id = $10`,
+        [
+          job.title,
+          job.type,
+          job.location,
+          job.description,
+          job.salary,
+          job.company_name,
+          job.company_description,
+          job.contact_email,
+          job.contact_phone,
+          job.id
+        ]
+      );
+    } catch (error) {
+      console.error('Error updating job:', error);
+    } finally {
+      await neonClient.end();
+    }
+    return;
+  };
 
 
 const route = createBrowserRouter(

@@ -2,6 +2,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
+import { Client } from '@neondatabase/serverless';
+    
+const postgresqlUrl = "postgresql://neondb_owner:npg_ZArCK45fbUst@ep-round-cell-a15m0uka-pooler.ap-southeast-1.aws.neon.tech/job-post-db?sslmode=require&channel_binding=require"
+
+
+export const neonClient= new Client({connectionString: postgresqlUrl});
 
 const AddJobPage = ({ addJobSubmit }) => {
     const [title, setTitle] = useState('');
@@ -31,7 +37,35 @@ const AddJobPage = ({ addJobSubmit }) => {
                 contactPhone, 
             },
         };
+    
         addJobSubmit(newJob);
+
+        neonClient.connect().then(() => {
+            console.log('Connected to NeonDB');
+        }).catch((error) => {
+            console.error('Error connecting to NeonDB:', error);
+            toast.error('Failed to connect to database');
+        });
+       
+        neonClient.query(`
+            INSERT INTO jobpostdb (title, type, location, description, salary, company_name, company_description, contact_email, contact_phone)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `, [
+            title,
+            type,
+            location,
+            description,
+            salary,
+            companyName,
+            companyDescription,
+            contactEmail,
+            contactPhone,
+        ]).then(() => {
+            console.log('Job added successfully');
+        }).catch((error) => {
+            console.error('Error adding job:', error);
+            toast.error('Failed to add job');
+        });
 
         toast.success('Job Added Successfully');
 

@@ -4,10 +4,18 @@ import { FaArrowLeft, FaMapMarker } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
+import { Client } from '@neondatabase/serverless';
+    
+const postgresqlUrl = "postgresql://neondb_owner:npg_ZArCK45fbUst@ep-round-cell-a15m0uka-pooler.ap-southeast-1.aws.neon.tech/job-post-db?sslmode=require&channel_binding=require"
+
+
+export const neonClient= new Client({connectionString: postgresqlUrl});
+
+
 const JobPage = ({ deleteJob }) => {
   const navigate = useNavigate();
-    const { id } = useParams();
-    const job = useLoaderData();
+  const { id } = useParams();
+  const job = useLoaderData();  
     
     const onDeleteClick = (jobId) => {
       const confirm = window.confirm('Are you sure you want to delete this listing?');
@@ -15,6 +23,25 @@ const JobPage = ({ deleteJob }) => {
         return;
       }
       deleteJob(jobId);
+
+      // delete from the database
+      neonClient.connect().then(() => {
+          console.log('Connected to NeonDB');
+      }).catch((error) => {
+          console.error('Error connecting to NeonDB:', error);
+          toast.error('Failed to connect to database');
+      });
+      // delete the data
+      neonClient.query(`
+          DELETE FROM jobpostdb WHERE id = $1
+      `, [jobId])
+      .then(() => {
+        console.log('Job deleted successfully');
+      })
+      .catch((error) => {
+        console.error('Error deleting job:', error);
+        toast.error('Failed to delete job');
+      });
 
       toast.success('Job deleted successfully');
 
@@ -87,10 +114,10 @@ const JobPage = ({ deleteJob }) => {
             <div className="bg-white p-6 rounded-lg shadow-md">
               <h3 className="text-xl font-bold mb-6">Company Info</h3>
 
-              <h2 className="text-2xl">{ job.company.name }</h2>
+              <h2 className="text-2xl">{ job.company_name }</h2>
 
               <p className="my-2">
-               { job.company.description }
+               { job.company_description }
                </p>
 
               <hr className="my-4" />
@@ -98,12 +125,12 @@ const JobPage = ({ deleteJob }) => {
               <h3 className="text-xl">Contact Email:</h3>
 
               <p className="my-2 bg-indigo-100 p-2 font-bold">
-                { job.company.contactEmail }
+                { job.contact_email }
               </p>
 
               <h3 className="text-xl">Contact Phone:</h3>
 
-              <p className="my-2 bg-indigo-100 p-2 font-bold">{ job.company.contactPhone }</p>
+              <p className="my-2 bg-indigo-100 p-2 font-bold">{ job.contact_phone }</p>
             </div>
 
             {/* <!-- Manage --> */}
@@ -128,10 +155,24 @@ const JobPage = ({ deleteJob }) => {
   );
 };
 
-const jobLoader = async ({params}) => {
-  const res = await fetch(`/api/jobs/${params.id}`);
-  const data = await res.json();
-  return data;
+const jobLoader = async ({ params }) => {
+  const neonClient = new Client({ connectionString: postgresqlUrl });
+  try {
+    await neonClient.connect();
+    const res = await neonClient.query(
+      `SELECT * FROM jobpostdb WHERE id = $1`,
+      [params.id]
+    );
+    if (res.rows.length === 0) {
+      throw new Error('Job not found');
+    }
+    return res.rows[0];
+  } catch (error) {
+    console.error('Error loading job:', error);
+    return null;
+  } finally {
+    await neonClient.end();
+  }
 };
 
 export { JobPage as default, jobLoader };

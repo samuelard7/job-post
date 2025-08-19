@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS job_post_db (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  description TEXT NOT NULL,
+  location VARCHAR(255),
+  company VARCHAR(255) NOT NULL,
+  salary VARCHAR(50),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

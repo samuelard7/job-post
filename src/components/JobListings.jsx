@@ -3,22 +3,34 @@ import {useState, useEffect} from 'react';
 import JobListing from './JobListing';
 import Spinner from './Spinner';
 
+import { Client } from '@neondatabase/serverless';
+    
+const postgresqlUrl = "postgresql://neondb_owner:npg_ZArCK45fbUst@ep-round-cell-a15m0uka-pooler.ap-southeast-1.aws.neon.tech/job-post-db?sslmode=require&channel_binding=require"
+
+
+
 const JobListings = ({ isHome = false }) => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
+  
 
   useEffect(() => { 
     const fetchJobs = async () => {
-      try{
-      const apiUrl = isHome ? '/api/jobs?_limit=3' : '/api/jobs';
-      const res = await fetch(apiUrl);
-      const data = await res.json();
-      setJobs(data);
-      }catch(error){
-        console.log('Error fetching data', error);
-      }
-      finally{
+      const neonClient = new Client({ connectionString: postgresqlUrl });
+      try {
+        setLoading(true);
+        await neonClient.connect();
+        const query = isHome
+          ? 'SELECT * FROM jobpostdb ORDER BY created_at DESC LIMIT 3'
+          : 'SELECT * FROM jobpostdb';
+        const res = await neonClient.query(query);
+        setJobs(res.rows);
+      } catch (error) {
+        console.error('Error fetching jobs:', error);
+        // toast.error('Failed to fetch jobs');
+      } finally {
         setLoading(false);
+        await neonClient.end();
       }
     }
     fetchJobs();

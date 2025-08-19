@@ -3,6 +3,13 @@ import { useState } from 'react';
 import { useParams, useLoaderData, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
+import { Client } from '@neondatabase/serverless';
+    
+const postgresqlUrl = "postgresql://neondb_owner:npg_ZArCK45fbUst@ep-round-cell-a15m0uka-pooler.ap-southeast-1.aws.neon.tech/job-post-db?sslmode=require&channel_binding=require"
+
+
+export const neonClient= new Client({connectionString: postgresqlUrl});
+
 const EditJobPage = ({updateJobSubmit}) => {
     const job = useLoaderData();
     const navigate = useNavigate();
@@ -14,10 +21,10 @@ const EditJobPage = ({updateJobSubmit}) => {
     const [location, setLocation] = useState(job.location);
     const [description, setDescription] = useState(job.description);
     const [salary, setSalary] = useState(job.salary);
-    const [companyName, setCompanyName] = useState(job.company.name);
-    const [companyDescription, setCompanyDescription] = useState(job.company.description);
-    const [contactEmail, setContactEmail] = useState(job.company.contactEmail);
-    const [contactPhone, setContactPhone] = useState(job.company.contactPhone);
+    const [companyName, setCompanyName] = useState(job.company_name);
+    const [companyDescription, setCompanyDescription] = useState(job.company_description);
+    const [contactEmail, setContactEmail] = useState(job.contact_email);
+    const [contactPhone, setContactPhone] = useState(job.contact_phone);
 
     
 
@@ -31,14 +38,44 @@ const EditJobPage = ({updateJobSubmit}) => {
               location,
               description,
               salary,
-              company: {
-                  name: companyName,
-                  description: companyDescription,
-                  contactEmail,
-                  contactPhone, 
-              },
+              company_name: companyName,
+              compant_description: companyDescription,
+              contactEmail,
+              contactPhone, 
+              
           };
           updateJobSubmit(updatedJob);
+
+          // to modify/edit the job in the database
+        
+          neonClient.connect().then(() => {
+              console.log('Connected to NeonDB');
+          }).catch((error) => {
+              console.error('Error connecting to NeonDB:', error);
+              toast.error('Failed to connect to database');
+          });
+          // update the data
+          neonClient.query(`
+              UPDATE jobpostdb
+              SET title = $1, type = $2, location = $3, description = $4, salary = $5, company_name = $6, company_description = $7, contact_email = $8, contact_phone = $9
+              WHERE id = $10
+          `, [
+              title,
+              type,
+              location,
+              description,
+              salary,
+              companyName,
+              companyDescription,
+              contactEmail,
+              contactPhone,
+              id,
+          ]).then(() => {
+              console.log('Job updated successfully');
+          }).catch((error) => {
+              console.error('Error updating job:', error);
+              toast.error('Failed to update job');
+          });
   
           toast.success('Job Updated Successfully');
   
