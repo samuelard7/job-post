@@ -4,8 +4,7 @@ import { toast } from 'react-toastify';
 
 import { Client } from '@neondatabase/serverless';
     
-const postgresqlUrl = "postgresql://neondb_owner:npg_ZArCK45fbUst@ep-round-cell-a15m0uka-pooler.ap-southeast-1.aws.neon.tech/job-post-db?sslmode=require&channel_binding=require"
-
+const postgresqlUrl = import.meta.env.VITE_POSTGRESQL_URL;
 
 export const neonClient= new Client({connectionString: postgresqlUrl});
 

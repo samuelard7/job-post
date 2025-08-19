@@ -5,9 +5,8 @@ import Spinner from './Spinner';
 
 import { Client } from '@neondatabase/serverless';
     
-const postgresqlUrl = "postgresql://neondb_owner:npg_ZArCK45fbUst@ep-round-cell-a15m0uka-pooler.ap-southeast-1.aws.neon.tech/job-post-db?sslmode=require&channel_binding=require"
 
-
+const postgresqlUrl = import.meta.env.VITE_POSTGRESQL_URL;
 
 const JobListings = ({ isHome = false }) => {
   const [jobs, setJobs] = useState([]);
